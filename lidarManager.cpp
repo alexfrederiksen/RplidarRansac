@@ -1,13 +1,22 @@
-#include <stdio.h>
 #include "lidarManager.h"
 
-#include <iostream>
-#include <array>
-#include <algorithm>
-
-#include "rplidar.h"
-
 using namespace rp::standalone::rplidar;
+
+float get_angle(node_t & node) {
+    return (node.angle_q6_checkbit >> 1) / 64.0f;
+}
+
+float get_dst(node_t & node) {
+    return node.distance_q2 / 4.0f;
+}
+
+vec2_t get_cartesian(node_t & node, vec2_t & vec) {
+	float dst = get_dst(node);
+	float angle = get_angle(node);
+	vec.x = dst * cos(angle);
+	vec.y = dst * sin(angle);
+	return vec;
+}
 
 // Constructors
 Lidar::Lidar(std::string _comPath) 

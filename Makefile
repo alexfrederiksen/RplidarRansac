@@ -1,7 +1,7 @@
 INCLUDES="./include"
-OBJECTS = main.o lidarManager.o lidar.a
+OBJECTS = main.o lidarManager.o ransac.o lidar.a
 
-lidar:$(OBJECTS)
+lidar:$(OBJECTS) bin
 	g++ -std=c++11 -o bin/lidar $(OBJECTS) -pthread 
 
 main.o:main.cpp
@@ -10,5 +10,12 @@ main.o:main.cpp
 lidarManager.o:lidarManager.cpp
 	g++ -std=c++11 -c lidarManager.cpp -I $(INCLUDES)
 
+ransac.o: ransac.cpp
+	g++ -std=c++11 -c ransac.cpp -I $(INCLUDES)
+
+bin:
+	mkdir bin
+
 clean:
-	rm *.o
+	rm -f *.o
+	rm -f -r bin
