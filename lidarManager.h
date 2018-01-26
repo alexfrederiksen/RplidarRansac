@@ -8,7 +8,7 @@
 #include <math.h>
 #include "rplidar.h"
 
-typedef rplidar_response_measurement_node_t node_t;
+typedef rplidar_response_measurement_node_t raw_node_t;
 
 struct vec2_t {
 	float x;
@@ -18,10 +18,9 @@ struct vec2_t {
 	vec2_t() : x(0), y(0) { }
 };
 
-float get_angle(node_t & node);
-float get_dst(node_t & node);
-vec2_t get_cartesian(node_t & node, vec2_t & vec);
-
+float get_angle(raw_node_t & node);
+float get_dst(raw_node_t & node);
+vec2_t get_cartesian(raw_node_t & node, vec2_t & vec);
 
 class Lidar {
     public:
@@ -35,7 +34,7 @@ class Lidar {
         float getDist(int i);
     private:
         std::string comPath;
-        std::array<node_t, 360*2> nodes;
+        std::array<raw_node_t, 360*2> nodes;
         _u32 baudrate = 115200;
         rp::standalone::rplidar::RPlidarDriver * drv;
         bool checkHealth();

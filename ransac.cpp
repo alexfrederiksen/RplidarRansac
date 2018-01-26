@@ -27,7 +27,7 @@ namespace rplidar { namespace algorithms {
 			int original_trial_size = size; // size at the beginning of each trial
 			// choose a random reference node
 			int ref_index = rand() % size;
-			float ref_angle = get_angle(nodes[ref_index]);
+			float ref_angle = nodes[ref_index].angle;
 			// choose surrounding nodes within parameter
 			for (int i = 0; i < sample_size; i++) {
 				// alternate from left and right
@@ -40,7 +40,7 @@ namespace rplidar { namespace algorithms {
 					pick = (ref_index + 1) % size;
 				}
 				// validate that pick is within given deviation
-				if (fabs(get_angle(nodes[pick]) - ref_angle) <= sample_deviation) {
+				if (fabs(nodes[pick].angle - ref_angle) <= sample_deviation) {
 					// pick the node
 					pop_node(pick, nodes, size);
 					// correct reference node position when popping from the left
@@ -56,9 +56,7 @@ namespace rplidar { namespace algorithms {
 			compute_reg_line(sample_start, sample_end, nodes, line);
 			// associate other nodes with the line (by popping them)
 			for (int i = 0; i < size; i++) {
-				vec2_t vec;
-				get_cartesian(nodes[i], vec);
-				float dst2 = dst2_to_line(line, vec.x, vec.y);
+				float dst2 = dst2_to_line(line, nodes[i].x, nodes[i].y);
 				if (dst2 <= proximity_epsilon * proximity_epsilon) {
 					// node is close enough to line
 					pop_node(i, nodes, size);
@@ -83,7 +81,6 @@ namespace rplidar { namespace algorithms {
 
 
 	line_t Ransac::compute_reg_line(int start, int end, node_t nodes[], line_t & line) {
-		vec2_t vec;
 		int node_count = start - end;
 		// compute sums for regression line
 		float x_sum = 0;
@@ -91,11 +88,11 @@ namespace rplidar { namespace algorithms {
 		float x2_sum = 0;
 		float xy_sum = 0; 
 		for (int i = start; i < end; i++) {
-			get_cartesian(nodes[i], vec);
-			x_sum += vec.x;
-			y_sum += vec.y;
-			x2_sum += vec.x * vec.x;
-			xy_sum += vec.x * vec.y;
+			node_t n = nodes[i];
+			x_sum += n.x;
+			y_sum += n.y;
+			x2_sum += n.x * n.x;
+			xy_sum += n.x * n.y;
 		}
 		// compute slope
 		line.m = (node_count * xy_sum - x_sum * y_sum) / 
@@ -115,7 +112,7 @@ namespace rplidar { namespace algorithms {
 			// find largest angled node
 			int largest = size;
 			for (int j = size + 1; j <= i; j++) {
-				if (get_angle(nodes[j]) > get_angle(nodes[largest])) {
+				if (nodes[j].angle > nodes[largest].angle) {
 					largest = j;
 				}
 			}

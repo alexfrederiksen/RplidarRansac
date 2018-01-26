@@ -13,6 +13,12 @@ namespace rplidar { namespace algorithms {
 		float b;
 	};
 
+	struct node_t {
+		float x;
+		float y;
+		float angle; // angle of raw data (in degrees)	
+	};
+
 	class Ransac {
 	private:
 		int max_nodes;           // maximum number of nodes in a given run
@@ -26,7 +32,7 @@ namespace rplidar { namespace algorithms {
 
 		std::vector<line_t> reg_lines; // contains confirmed regression lines
 
-		line_t compute_reg_line(int start, int end, node_t nodes[], line_t & line);     // computes regression lines
+		line_t compute_reg_line(int start, int end, node_t nodes[], line_t & line);             // computes regression lines
 		void restore_trial(node_t nodes[], int ref_index, int original_trial_size, int & size); // restores a trial to the starting state
 		void pop_node(int node, node_t nodes[], int & size);                                    // pops a node out of the array
 		float dst2_to_line(line_t & line, float x, float y);                                    // computes the square distance to line
