@@ -1,6 +1,14 @@
 #include "ransac.h"
 
-namespace rplidar { namespace algorithms {
+namespace ransac {
+
+	float line_t::get_x(float y) {
+		return (y - b) / m;
+	}
+
+	float line_t::get_y(float x) {
+		return m * x + b;
+	}
 
 	/**
 	 * Computes a "node_t" from a given "raw_node_t"
@@ -175,4 +183,4 @@ namespace rplidar { namespace algorithms {
 		return (numerator * numerator) / (1 + line.m * line.m);
 	}
 		
-}}
+}

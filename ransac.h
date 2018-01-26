@@ -5,11 +5,13 @@
 #include <stdlib.h>
 #include <math.h>
 
-namespace rplidar { namespace algorithms {
+namespace ransac {
 	// defines regression lines in the format y = mx + b
 	struct line_t {
 		float m;
 		float b;
+		float get_x(float y);
+		float get_y(float x);
 	};
 
 	struct node_t {
@@ -41,8 +43,8 @@ namespace rplidar { namespace algorithms {
 		Ransac(int max_trials, int sample_size, float sample_deviation, float proximity_epsilon, int line_consensus);
 		~Ransac();
 		void compute(node_t nodes[], int size); // runs the RANSAC algorithm
+		std::vector<line_t> get_reg_lines() { return reg_lines; }
 	};
-
-}}
+}
 
 #endif

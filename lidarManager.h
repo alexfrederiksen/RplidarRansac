@@ -28,9 +28,9 @@ void get_cartesian(const raw_node_t & node, float & x, float & y);
 class Lidar {
     private:
     	rp::standalone::rplidar::RPlidarDriver * drv;
-	std::string com_path;
-	raw_node_t nodes[NODE_COUNT];
-	_u32 baudrate = 115200;
+	    std::string com_path;
+	    raw_node_t nodes[NODE_COUNT];
+	    _u32 baudrate = 115200;
 
 	bool check_health();
     public:
@@ -42,8 +42,8 @@ class Lidar {
         void scan();
         float getAngle(int i);
         float getDist(int i);
-
-	raw_node_t * get_nodes() { return nodes; }
+        
+        raw_node_t * get_nodes() { return nodes; }
 };
 
 #endif
