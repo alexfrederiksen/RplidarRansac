@@ -6,7 +6,6 @@
 #include <math.h>
 
 namespace rplidar { namespace algorithms {
-
 	// defines regression lines in the format y = mx + b
 	struct line_t {
 		float m;
@@ -19,6 +18,8 @@ namespace rplidar { namespace algorithms {
 		float angle; // angle of raw data (in degrees)	
 	};
 
+	node_t & compute_raw_node(const raw_node_t & raw_node, node_t & out_node);
+	
 	class Ransac {
 	private:
 		int max_nodes;           // maximum number of nodes in a given run

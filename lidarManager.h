@@ -8,6 +8,8 @@
 #include <math.h>
 #include "rplidar.h"
 
+#define NODE_COUNT 360 * 2
+
 typedef rplidar_response_measurement_node_t raw_node_t;
 
 struct vec2_t {
@@ -18,11 +20,19 @@ struct vec2_t {
 	vec2_t() : x(0), y(0) { }
 };
 
-float get_angle(raw_node_t & node);
-float get_dst(raw_node_t & node);
-vec2_t get_cartesian(raw_node_t & node, vec2_t & vec);
+float get_angle(const raw_node_t & node);
+float get_dst(const raw_node_t & node);
+vec2_t get_cartesian(const raw_node_t & node, vec2_t & vec);
+void get_cartesian(const raw_node_t & node, float & x, float & y);
 
 class Lidar {
+    private:
+    	rp::standalone::rplidar::RPlidarDriver * drv;
+	std::string com_path;
+	raw_node_t nodes[NODE_COUNT];
+	_u32 baudrate = 115200;
+
+	bool check_health();
     public:
         Lidar(std::string _comPath); 
         Lidar();
@@ -32,12 +42,8 @@ class Lidar {
         void scan();
         float getAngle(int i);
         float getDist(int i);
-    private:
-        std::string comPath;
-        std::array<raw_node_t, 360*2> nodes;
-        _u32 baudrate = 115200;
-        rp::standalone::rplidar::RPlidarDriver * drv;
-        bool checkHealth();
+
+	raw_node_t * get_nodes() { return nodes; }
 };
 
 #endif

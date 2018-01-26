@@ -1,6 +1,17 @@
 #include "ransac.h"
 
 namespace rplidar { namespace algorithms {
+
+	/**
+	 * Computes a "node_t" from a given "raw_node_t"
+	 */
+	node_t & compute_raw_node(const raw_node_t & raw_node, node_t & out_node) {
+		// compute the cartesian coordinates for the raw node
+		get_cartesian(raw_node, out_node.x, out_node.y);
+		// compute the angle
+		out_node.angle = get_angle(raw_node);
+		return out_node;
+	}
 	
 	Ransac::Ransac(int max_trials, int sample_size, float sample_deviation, float proximity_epsilon, int line_consensus) :
 		max_trials(max_trials), sample_size(sample_size),
