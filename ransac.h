@@ -4,6 +4,9 @@
 #include "lidarManager.h"
 #include <stdlib.h>
 #include <math.h>
+#include <iostream>
+#include <cstdio>
+
 
 namespace ransac {
     // defines regression lines in the format y = mx + b

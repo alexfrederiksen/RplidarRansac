@@ -1,6 +1,38 @@
 #include "ransac.h"
+#include <cstdarg>
 
 namespace ransac {
+
+    bool debug_enabled = false;
+    int debug_level = 1;
+
+    void debug(std::string msg, int level = 0) {
+        if (debug_enabled) {
+            std::cout << msg.c_str() << std::endl;
+        }
+    }
+
+    void debugf(std::string format, ...) {
+        if (debug_enabled) {
+            va_list args;
+            va_start(args, format);
+            vprintf(format.c_str(), args);
+            va_end(args);
+        }
+    }
+
+
+
+    void print_nodes(node_t nodes[], int size, int capacity) {
+        std::cout << "---[Node list]---:" << std::endl;
+        for (int i = 0; i < size; i++) {
+            std::cout << "Node " << nodes[i].angle << std::endl;
+        }
+        std::cout << "---[Popped nodes]---: " << std::endl;
+        for (int i = size; i < capacity; i++) {
+            std::cout << "Node " << nodes[i].angle << std::endl;
+        }
+    }
 
     float line_t::get_x(float y) {
         if (m == 0) {
@@ -48,11 +80,14 @@ namespace ransac {
         reg_lines.clear();
         int original_size = size; // size at the beginning of computation
         int trial_count = 0;
+        debugf("Starting %d trials...\n", max_trials);
+        //debug("Starting trials...");
         while (size > 0 && trial_count < max_trials) {
             int original_trial_size = size; // size at the beginning of each trial
             // choose a random reference node
             int ref_index = rand() % size;
             float ref_angle = nodes[ref_index].angle;
+            debugf("Choosing reference index %d by random...\n", ref_index);
             // choose surrounding nodes within parameter
             for (int i = 0; i < sample_size; i++) {
                 // alternate from left and right
@@ -64,23 +99,28 @@ namespace ransac {
                     // pick from right
                     pick = (ref_index + 1) % size;
                 }
+                debugf("Looking at index %d next to reference...\n", pick);
                 // validate that pick is within given deviation
                 if (pick != ref_index && fabs(nodes[pick].angle - ref_angle) <= sample_deviation) {
                     // pick the node
+                    debugf("Popping node %d after picking...\n", pick);
                     pop_node(pick, nodes, size);
                     // correct reference node position when popping from the left
                     if (pick < ref_index) ref_index--;
                 }
             }
             // pop the reference node
+            debugf("Popping reference node (at %d)...\n", ref_index);
             pop_node(ref_index, nodes, size);
             // compute least squares regression line
+            debug("Computing raw regression line from initial group...");
             int sample_start = size;              // inclusive
             int sample_end = original_trial_size; // exclusive
             line_t line;
             int line_status = compute_reg_line(sample_start, sample_end, nodes, line);
             if (line_status == 0) {
                 // associate other nodes with the line (by popping them)
+                debug("Associating other nodes to the raw regression line...");
                 for (int i = 0; i < size; i++) {
                     float dst2 = dst2_to_line(line, nodes[i].x, nodes[i].y);
                     if (dst2 <= proximity_epsilon * proximity_epsilon) {
@@ -89,27 +129,36 @@ namespace ransac {
                         i--;    
                     }
                 }
+            } else {
+                debug("Raw regression line failed to compute.");
             }
             // confirm line by given consensus count
             int popped_nodes = original_trial_size - size;
+            debugf("%d nodes associated to the raw line.\n", popped_nodes);
             if (popped_nodes >= line_consensus && line_status == 0) {
                 // recompute the regression line with all associated nodes
+                debug("Computing new regression line for nodes...");
                 line_status = compute_reg_line(size, original_trial_size, nodes, line);
                 if (line_status == 0) { 
                     // push into line array
+                    debug("Pushing new regression line...");
                     reg_lines.push_back(line);
                 }
             } else {
                 // line failure
+                debug("New line failed to be created (did not meet consensus or failed before).");
                 line_status = -1;
             }
             if (line_status != 0) {
                 // put nodes back into trial array
+                debug("Trial failed. Restoring the trial back...");
                 restore_trial(nodes, ref_index, original_trial_size, size);
             }
             // increment the trial counter
             trial_count++;
+            debug("Finished trial.");
         }
+        debug("Finished RANSAC.");
     }
 
 
@@ -136,8 +185,9 @@ namespace ransac {
         // compute slope
         float m_num = (node_count * xy_sum - x_sum * y_sum); 
         float m_denom = (node_count * x2_sum - x_sum * x_sum);
-        if (m_denom = 0.0f) return -1;
+        if (m_denom == 0.0f) return -1;
         line.m = m_num / m_denom;
+        //printf("Computed slope (num %f denom %f = %f) \n", m_num, m_denom, line.m); 
         // compute y-intercept
         line.b = (y_sum - line.m * x_sum) / node_count;
         return 0;
@@ -147,9 +197,10 @@ namespace ransac {
      * Restores the nodes to the state before a trial started. It attempts to take the popped 
      * nodes and re-sort them into the array.
      */
-    void Ransac::restore_trial(node_t nodes[], int ref_index, int original_trial_size, int & size) {
+    void Ransac::restore_trial(node_t nodes[], int ref_index, int original_size, int & size) {
         // sort the popped nodes in the void region ("size" to "original_trial_size")
-        for (int i = original_trial_size - 1; i > size; i--) {
+        //if (debug_enabled) print_nodes(nodes, size, original_size);
+        for (int i = original_size - 1; i > size; i--) {
             // find largest angled node
             int largest = size;
             for (int j = size + 1; j <= i; j++) {
@@ -163,12 +214,13 @@ namespace ransac {
             nodes[largest] = high;
         }
         // copy void nodes to temp array
-        int popped_nodes = original_trial_size - size;
-        for (int i = size; i < original_trial_size; i++) {
+        //if (debug_enabled) print_nodes(nodes, size, original_size);
+        int popped_nodes = original_size - size;
+        for (int i = size; i < original_size; i++) {
             temp_nodes[i - size] = nodes[i]; 
         }
         // shift nodes in array to make room for popped void nodes
-        for (int i = ref_index; i < size; i++) {
+        for (int i = size - 1; i >= ref_index; i--) {
             nodes[i + popped_nodes] = nodes[i];
             // insert popped nodes
             int temp_index = i - ref_index;
@@ -176,8 +228,9 @@ namespace ransac {
                 nodes[i] = temp_nodes[temp_index];
             }
         }
+        //if (debug_enabled) print_nodes(nodes, size, original_size);
         // restore size
-        size = original_trial_size;
+        size = original_size;
     }
 
     /*

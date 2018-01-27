@@ -63,6 +63,7 @@ void Core::render() {
     // render lines
     std::vector<ransac::line_t> lines = ransac.get_reg_lines();
     for (int i = 0; i < lines.size(); i++) {
+        //std::cout << "Draw line: m " << lines[i].m << " b " << lines[i].b << std::endl; 
         // compute endpoints from line
         ransac::line_t l;
         l.m = lines[i].m;              // already in device space
@@ -76,10 +77,10 @@ void Core::render() {
         };
         // find all points that are bounded by device coords
         vec2_t * points[2];
-        int point_count;
+        int point_count = 0;
         for (int i = 0; i < 4; i++) {
             if (in_device_bounds(clips[i])) {
-                    points[point_count] = &clips[i];
+                    points[point_count] = &(clips[i]);
                     point_count++;
                     if (point_count >= 2) break;
             }
@@ -121,7 +122,7 @@ Core::Core(ransac::node_t * testing_data, int size) :
     testing_data(testing_data),
     testing_data_size(size),
     testing_enabled(true),
-    ransac(size, 100, 10, 2.0f, 1.0f, 10) {
+    ransac(size, 100, 10, 2.0f, 1.0f, 3) {
 }
 
 Core::Core() : 
@@ -195,13 +196,14 @@ int main(int arg_count, char ** arg_values) {
     // check test mode
     if (arg_count > 1) {
         // test mode
-        const int test_count = 1000;
+        const int test_count = 100;
         ransac::node_t test_data[test_count];
         for (int i = 0; i < test_count; i++) {
             test_data[i].x = rand() % 2000 - 1000;
-            test_data[i].y = rand() % 2000 - 1000;
+            test_data[i].y = test_data[i].x + (rand() % 200 - 100);
+            //test_data[i].y = rand() % 2000 - 1000;
             test_data[i].angle = rand() % 360;
-            std::cout << test_data[i].x << " " << test_data[i].y << " " << test_data[i].angle << std::endl;
+            //std::cout << test_data[i].x << " " << test_data[i].y << " " << test_data[i].angle << std::endl;
         }
 
         Core core(test_data, test_count);
