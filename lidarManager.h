@@ -13,11 +13,11 @@
 typedef rplidar_response_measurement_node_t raw_node_t;
 
 struct vec2_t {
-	float x;
-	float y;
+    float x;
+    float y;
 
-	vec2_t(float x, float y) : x(x), y(y) { }
-	vec2_t() : x(0), y(0) { }
+    vec2_t(float x, float y) : x(x), y(y) { }
+    vec2_t() : x(0), y(0) { }
 };
 
 float get_angle(const raw_node_t & node);
@@ -27,12 +27,12 @@ void get_cartesian(const raw_node_t & node, float & x, float & y);
 
 class Lidar {
     private:
-    	rp::standalone::rplidar::RPlidarDriver * drv;
-	    std::string com_path;
-	    raw_node_t nodes[NODE_COUNT];
-	    _u32 baudrate = 115200;
+        rp::standalone::rplidar::RPlidarDriver * drv;
+        std::string com_path;
+        raw_node_t nodes[NODE_COUNT];
+        _u32 baudrate = 115200;
 
-	bool check_health();
+        bool check_health();
     public:
         Lidar(std::string _comPath); 
         Lidar();

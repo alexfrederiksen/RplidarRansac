@@ -11,15 +11,15 @@ float get_dst(const raw_node_t & node) {
 }
 
 vec2_t get_cartesian(const raw_node_t & node, vec2_t & vec) {
-	get_cartesian(node, vec.x, vec.y);
-	return vec;
+    get_cartesian(node, vec.x, vec.y);
+    return vec;
 }
 
 void get_cartesian(const raw_node_t & node, float & x, float & y) {
-	float dst = get_dst(node);
-	float angle_rad = get_angle(node) * (M_PI / 90.0f); 
-	x = dst * cos(angle_rad);
-	y = dst * sin(angle_rad);
+    float dst = get_dst(node);
+    float angle_rad = get_angle(node) * (M_PI / 90.0f); 
+    x = dst * cos(angle_rad);
+    y = dst * sin(angle_rad);
 }
 
 // Constructors

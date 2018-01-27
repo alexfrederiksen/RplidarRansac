@@ -95,6 +95,11 @@ Core::Core() : ransac(100, 10, 2.0f, 1.0f, 10) {
     point_rect.h = POINT_SIZE;
 }
 
+Core::~Core() {
+    SDL_Quit();
+    lidar.stop();
+}
+
 bool Core::init() {
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) return false;
     // start up the lidar
