@@ -61,6 +61,7 @@ void Core::render() {
         }
     }
     // render lines
+    SDL_SetRenderDrawColor(renderer, 200, 0, 0, 255);
     std::vector<ransac::line_t> lines = ransac.get_reg_lines();
     for (int i = 0; i < lines.size(); i++) {
         //std::cout << "Draw line: m " << lines[i].m << " b " << lines[i].b << std::endl; 
@@ -200,7 +201,7 @@ int main(int arg_count, char ** arg_values) {
         ransac::node_t test_data[test_count];
         for (int i = 0; i < test_count; i++) {
             test_data[i].x = rand() % 2000 - 1000;
-            test_data[i].y = test_data[i].x + (rand() % 200 - 100);
+            test_data[i].y = test_data[i].x + (rand() % 20 - 10);
             //test_data[i].y = rand() % 2000 - 1000;
             test_data[i].angle = rand() % 360;
             //std::cout << test_data[i].x << " " << test_data[i].y << " " << test_data[i].angle << std::endl;
