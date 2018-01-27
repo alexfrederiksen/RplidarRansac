@@ -11,25 +11,54 @@ bool in_device_bounds(vec2_t & vec) {
 
 void Core::update() {
     // perform a scan
-    lidar.scan();
-    // compute all the nodes
-    raw_node_t * raw_nodes = lidar.get_nodes();
-    for (int i = 0; i < NODE_COUNT; i++) {
-        compute_raw_node(raw_nodes[i], computed_nodes[i]);
+    if (!testing_enabled) {
+        lidar.scan();
+        // compute all the nodes
+        raw_node_t * raw_nodes = lidar.get_nodes();
+        for (int i = 0; i < NODE_COUNT; i++) {
+            compute_raw_node(raw_nodes[i], computed_nodes[i]);
+        }
+        // throw at RANSAC algorithm
+        ransac.compute(computed_nodes, NODE_COUNT);
+    } else {
+        // sort test data
+        for (int i = testing_data_size - 1; i > 0; i--) {
+            // select largest angle
+            int select = 0;
+            for (int j = 1; j <= i; j++) {
+                if (testing_data[j].angle > testing_data[select].angle) {
+                    select = j;
+                }
+            }
+            // swap select with end
+            ransac::node_t high = testing_data[i];
+            testing_data[i] = testing_data[select];
+            testing_data[select] = high;
+        }
+        // throw test data at RANSAC algorithm
+        ransac.compute(testing_data, testing_data_size);
     }
-    // throw at RANSAC algorithm
-    ransac.compute(computed_nodes, NODE_COUNT);
 }
 
 void Core::render() {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 20, 20, 20, 255);
     SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
     // render nodes
-    for (int i = 0; i < NODE_COUNT; i++) {
-        float x = computed_nodes[i].x;
-        float y = computed_nodes[i].y;
-        world_to_device(x, y);
-        draw_point(x, y);
+    if (!testing_enabled) {
+        for (int i = 0; i < NODE_COUNT; i++) {
+            float x = computed_nodes[i].x;
+            float y = computed_nodes[i].y;
+            world_to_device(x, y);
+            draw_point(x, y);
+        }
+    } else {
+        for (int i = 0; i < testing_data_size; i++) {
+            float x = testing_data[i].x;
+            float y = testing_data[i].y;
+            world_to_device(x, y);
+            draw_point(x, y);
+        }
     }
     // render lines
     std::vector<ransac::line_t> lines = ransac.get_reg_lines();
@@ -83,27 +112,43 @@ int Core::run() {
         }
         update();
         render();
+        SDL_Delay(1000);
     }
     return 0;
 }
 
-Core::Core() : ransac(100, 10, 2.0f, 1.0f, 10) {
+Core::Core(ransac::node_t * testing_data, int size) :
+    testing_data(testing_data),
+    testing_data_size(size),
+    testing_enabled(true),
+    ransac(size, 100, 10, 2.0f, 1.0f, 10) {
+}
+
+Core::Core() : 
+    testing_enabled(false),
+    ransac(NODE_COUNT, 100, 10, 2.0f, 1.0f, 10) {
+
+}
+
+
+Core::~Core() {
+    SDL_Quit();
+    if (!testing_enabled) lidar.stop();
+}
+
+bool Core::init() {
     sDisplay = NULL;
     running = true;
 
     point_rect.w = POINT_SIZE;
     point_rect.h = POINT_SIZE;
-}
 
-Core::~Core() {
-    SDL_Quit();
-    lidar.stop();
-}
-
-bool Core::init() {
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) return false;
     // start up the lidar
-    lidar.start();
+    if (!testing_enabled) {
+        lidar.init();
+        lidar.start();
+    }
     return SDL_CreateWindowAndRenderer(640, 480, 0, &window, &renderer) == 0;
 }
 
@@ -142,7 +187,28 @@ void Core::draw_line(float x1, float y1, float x2, float y2) {
     SDL_RenderDrawLine(renderer, (int) x1, (int) y1, (int) x2, (int) y2);
 }
 
-int main(int, char **) {
-    Core core;
-    return core.run();
+int main(int arg_count, char ** arg_values) {
+    for (int i = 0; i < arg_count; i++) {
+        std::cout << "ARG " << i << " : " << arg_values[i] << std::endl;   
+    }
+
+    // check test mode
+    if (arg_count > 1) {
+        // test mode
+        const int test_count = 1000;
+        ransac::node_t test_data[test_count];
+        for (int i = 0; i < test_count; i++) {
+            test_data[i].x = rand() % 2000 - 1000;
+            test_data[i].y = rand() % 2000 - 1000;
+            test_data[i].angle = rand() % 360;
+            std::cout << test_data[i].x << " " << test_data[i].y << " " << test_data[i].angle << std::endl;
+        }
+
+        Core core(test_data, test_count);
+        return core.run();
+    } else {
+        // normal mode
+        Core core;
+        return core.run();
+    }
 }

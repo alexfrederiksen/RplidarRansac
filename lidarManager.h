@@ -37,6 +37,7 @@ class Lidar {
         Lidar(std::string _comPath); 
         Lidar();
         ~Lidar();
+        void init();
         void start();
         void stop();
         void scan();

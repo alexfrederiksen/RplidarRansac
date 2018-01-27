@@ -26,20 +26,6 @@ void get_cartesian(const raw_node_t & node, float & x, float & y) {
 Lidar::Lidar(std::string com_path) 
     : com_path(com_path)
     , drv(RPlidarDriver::CreateDriver(RPlidarDriver::DRIVER_TYPE_SERIALPORT)) {
-        if(!drv) {
-            std::cerr << "insufficient memory, bye" << com_path << std::endl;
-            throw "insufficient memory";
-        }
-        //connect
-        if(IS_FAIL(drv->connect(com_path.c_str(), baudrate))) {
-            std::cerr << "Error: Cannot bind to serial port " << com_path << std::endl;
-            throw "can't bind it";
-        }
-
-        if(!check_health()) {
-            throw "unhealth";
-        }
-
 }
 
 Lidar::Lidar() : Lidar("/dev/ttyUSB0") { }
@@ -50,6 +36,22 @@ Lidar::~Lidar() {
 }
 
 /////////////////////////////////////////////
+
+void Lidar::init() {
+    if(!drv) {
+        std::cerr << "insufficient memory, bye" << com_path << std::endl;
+        throw "insufficient memory";
+    }
+    //connect
+    if(IS_FAIL(drv->connect(com_path.c_str(), baudrate))) {
+        std::cerr << "Error: Cannot bind to serial port " << com_path << std::endl;
+        throw "can't bind it";
+    }
+
+    if(!check_health()) {
+        throw "unhealth";
+    }
+}
 
 void Lidar::start() {
     drv->startMotor();

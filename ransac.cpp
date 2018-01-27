@@ -3,6 +3,10 @@
 namespace ransac {
 
     float line_t::get_x(float y) {
+        if (m == 0) {
+            // cannot divide by zero
+            return 0;
+        }
         return (y - b) / m;
     }
 
@@ -21,12 +25,12 @@ namespace ransac {
         return out_node;
     }
     
-    Ransac::Ransac(int max_trials, int sample_size, float sample_deviation, float proximity_epsilon, int line_consensus) :
+    Ransac::Ransac(int max_nodes, int max_trials, int sample_size, float sample_deviation, float proximity_epsilon, int line_consensus) :
         max_trials(max_trials), sample_size(sample_size),
         sample_deviation(sample_deviation), proximity_epsilon(proximity_epsilon),
         line_consensus(line_consensus) {
         // allocate temp array
-        temp_nodes = new node_t[sample_size];
+        temp_nodes = new node_t[max_nodes];
     }
 
     Ransac::~Ransac() {
@@ -40,6 +44,8 @@ namespace ransac {
      * is pre-sorted by the angles (which natively it is (; ).
      */
     void Ransac::compute(node_t nodes[], int size) {
+        // clear out the line array
+        reg_lines.clear();
         int original_size = size; // size at the beginning of computation
         int trial_count = 0;
         while (size > 0 && trial_count < max_trials) {
@@ -59,7 +65,7 @@ namespace ransac {
                     pick = (ref_index + 1) % size;
                 }
                 // validate that pick is within given deviation
-                if (fabs(nodes[pick].angle - ref_angle) <= sample_deviation) {
+                if (pick != ref_index && fabs(nodes[pick].angle - ref_angle) <= sample_deviation) {
                     // pick the node
                     pop_node(pick, nodes, size);
                     // correct reference node position when popping from the left
@@ -72,24 +78,32 @@ namespace ransac {
             int sample_start = size;              // inclusive
             int sample_end = original_trial_size; // exclusive
             line_t line;
-            compute_reg_line(sample_start, sample_end, nodes, line);
-            // associate other nodes with the line (by popping them)
-            for (int i = 0; i < size; i++) {
-                float dst2 = dst2_to_line(line, nodes[i].x, nodes[i].y);
-                if (dst2 <= proximity_epsilon * proximity_epsilon) {
-                    // node is close enough to line
-                    pop_node(i, nodes, size);
-                    i--;    
+            int line_status = compute_reg_line(sample_start, sample_end, nodes, line);
+            if (line_status == 0) {
+                // associate other nodes with the line (by popping them)
+                for (int i = 0; i < size; i++) {
+                    float dst2 = dst2_to_line(line, nodes[i].x, nodes[i].y);
+                    if (dst2 <= proximity_epsilon * proximity_epsilon) {
+                        // node is close enough to line
+                        pop_node(i, nodes, size);
+                        i--;    
+                    }
                 }
             }
             // confirm line by given consensus count
             int popped_nodes = original_trial_size - size;
-            if (popped_nodes >= line_consensus) {
+            if (popped_nodes >= line_consensus && line_status == 0) {
                 // recompute the regression line with all associated nodes
-                compute_reg_line(size, original_trial_size, nodes, line);
-                // push into line array
-                reg_lines.push_back(line);
+                line_status = compute_reg_line(size, original_trial_size, nodes, line);
+                if (line_status == 0) { 
+                    // push into line array
+                    reg_lines.push_back(line);
+                }
             } else {
+                // line failure
+                line_status = -1;
+            }
+            if (line_status != 0) {
                 // put nodes back into trial array
                 restore_trial(nodes, ref_index, original_trial_size, size);
             }
@@ -99,8 +113,14 @@ namespace ransac {
     }
 
 
-    line_t Ransac::compute_reg_line(int start, int end, node_t nodes[], line_t & line) {
+    /*
+     *  Computes a regression line from the nodes in an array.
+     *  returns the status code (0 = success, -1 = failure)
+     */ 
+    int Ransac::compute_reg_line(int start, int end, node_t nodes[], line_t & line) {
         int node_count = start - end;
+        // return if no nodes where popped
+        if (node_count == 0) return -1;
         // compute sums for regression line
         float x_sum = 0;
         float y_sum = 0;
@@ -114,11 +134,13 @@ namespace ransac {
             xy_sum += n.x * n.y;
         }
         // compute slope
-        line.m = (node_count * xy_sum - x_sum * y_sum) / 
-             (node_count * x2_sum - x_sum * x_sum);
+        float m_num = (node_count * xy_sum - x_sum * y_sum); 
+        float m_denom = (node_count * x2_sum - x_sum * x_sum);
+        if (m_denom = 0.0f) return -1;
+        line.m = m_num / m_denom;
         // compute y-intercept
         line.b = (y_sum - line.m * x_sum) / node_count;
-        return line;
+        return 0;
     }
 
     /**
@@ -141,11 +163,11 @@ namespace ransac {
             nodes[largest] = high;
         }
         // copy void nodes to temp array
+        int popped_nodes = original_trial_size - size;
         for (int i = size; i < original_trial_size; i++) {
             temp_nodes[i - size] = nodes[i]; 
         }
         // shift nodes in array to make room for popped void nodes
-        int popped_nodes = original_trial_size - size;
         for (int i = ref_index; i < size; i++) {
             nodes[i + popped_nodes] = nodes[i];
             // insert popped nodes

@@ -4,13 +4,17 @@
 #include "ransac.h"
 
 
-#define SCREEN_WIDTH  640    // screen width in pixels
-#define SCREEN_HEIGHT 480    // screen height in pixels
-#define VIEW_SCALE    1/1000 // scales millimeters to device coords
-#define POINT_SIZE    10     // point size in pixels
+#define SCREEN_WIDTH  640          // screen width in pixels
+#define SCREEN_HEIGHT 480          // screen height in pixels
+#define VIEW_SCALE    1.0f/1000.0f // scales millimeters to device coords
+#define POINT_SIZE    10           // point size in pixels
 
 class Core {
     private:
+        bool testing_enabled;
+        ransac::node_t * testing_data;
+        int testing_data_size;
+
         SDL_Rect point_rect; // reusable rectangle used for drawing points
         Lidar lidar;
         ransac::node_t computed_nodes[NODE_COUNT];
@@ -26,6 +30,7 @@ class Core {
         void draw_point(float x, float y);                      // draw point in device coords (-1 to 1)
         void draw_line(float x1, float y1, float x2, float y2); // draw line in device coords (-1 to 1)
     public:
+        Core(ransac::node_t * testing_data, int size);
         Core();
         ~Core();
         int run();
