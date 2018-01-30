@@ -17,7 +17,7 @@ vec2_t get_cartesian(const raw_node_t & node, vec2_t & vec) {
 
 void get_cartesian(const raw_node_t & node, float & x, float & y) {
     float dst = get_dst(node);
-    float angle_rad = get_angle(node) * (M_PI / 90.0f); 
+    float angle_rad = get_angle(node) * (M_PI / 180.0f); 
     x = dst * cos(angle_rad);
     y = dst * sin(angle_rad);
 }
@@ -64,13 +64,9 @@ void Lidar::stop() {
 }
 
 void Lidar::scan() {
-    //raw_node_t _nodes[360*2];
-    size_t nodeSize;
-    
-    drv->grabScanData(nodes, nodeSize);
-    std::cout << "NodeCount: " << nodeSize << std::endl;
-    //std::copy(std::begin(_nodes), std::end(_nodes), std::begin(nodes));
-    
+    node_count = MAX_NODE_COUNT;
+    drv->grabScanData(nodes, node_count);
+    drv->ascendScanData(nodes, node_count);    
 }
 
 float Lidar::getAngle(int i) {
@@ -87,7 +83,6 @@ bool Lidar::check_health() {
 
     result = drv->getHealth(healthInfo);
     if(IS_OK(result)) {
-        std::cout << "Health: " << healthInfo.status << std::endl;
         if(healthInfo.status == RPLIDAR_STATUS_ERROR) {
             std::cerr << "Error: RPlidar unhealthy. Reboot and try again." << std::endl;
             return false;

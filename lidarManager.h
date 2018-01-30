@@ -8,7 +8,7 @@
 #include <math.h>
 #include "rplidar.h"
 
-#define NODE_COUNT 360 * 2
+#define MAX_NODE_COUNT 360 * 2
 
 typedef rplidar_response_measurement_node_t raw_node_t;
 
@@ -29,7 +29,8 @@ class Lidar {
     private:
         rp::standalone::rplidar::RPlidarDriver * drv;
         std::string com_path;
-        raw_node_t nodes[NODE_COUNT];
+        raw_node_t nodes[MAX_NODE_COUNT];
+        size_t node_count;
         _u32 baudrate = 115200;
 
         bool check_health();
@@ -45,6 +46,7 @@ class Lidar {
         float getDist(int i);
         
         raw_node_t * get_nodes() { return nodes; }
+        size_t get_node_count() { return node_count; }
 };
 
 #endif

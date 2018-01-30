@@ -3,7 +3,7 @@ INCLUDES="./include"
 LSDL=-lSDL2
 OBJECTS = core.o lidarManager.o ransac.o lidar.a
 
-lidar: core.o lidarManager.o ransac.o bin
+bin/lidar: core.o lidarManager.o ransac.o bin
 	g++ -std=c++11 -o bin/lidar $(OBJECTS) -pthread $(LSDL)
 
 core.o: core.cpp core.h
@@ -21,3 +21,9 @@ bin:
 clean:
 	rm -f *.o
 	rm -rf bin
+
+run: bin/lidar
+	./bin/lidar
+
+test: bin/lidar
+	./bin/lidar test
